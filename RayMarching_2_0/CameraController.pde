@@ -4,7 +4,7 @@ public class CameraController {
   public static final float FOCAL_LENGTH = 1.;
   private final float MAX_PITCH = 89.;
   private final float MIN_ZOOM = 4.;
-  private final float MAX_ZOOM = 10.;
+  private final float MAX_ZOOM = 15.;
   private float _pitch;
   private float _yaw;
   private float _pitchSensitivity;
@@ -49,6 +49,24 @@ public class CameraController {
   
   public PMatrix3D GetCopyRotationMatrix(){
     return _rotationMatrix.get();
+  }
+  
+  public void UpdateLookAtPosition(Grid grid){
+    Iterable<Voxel> voxels = grid.GetVoxels();
+    Voxel cursor = grid.GetCursor();
+    PVector meanVoxelsPosition = new PVector(0., 0., 0.);
+    int i = 0;
+    for (Voxel voxel : voxels){
+      meanVoxelsPosition = PVector.add(meanVoxelsPosition, grid.GetPositionFromCoords(voxel));
+      i++;
+    }
+    if (i > 0){
+      meanVoxelsPosition = PVector.mult(meanVoxelsPosition, 1. / float(i));
+      _lookAtPosition = PVector.mult(PVector.add(meanVoxelsPosition, grid.GetPositionFromCoords(cursor)), 0.5);
+    }
+    else {
+      _lookAtPosition = grid.GetPositionFromCoords(cursor);
+    }
   }
   
   public PVector GetCameraPosition(){
