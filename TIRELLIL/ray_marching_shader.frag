@@ -40,11 +40,14 @@ const float sqrt2 = 1.4142135623;
 const float sqrt3 = 1.7320508075;
 
 // Signed distance function of a rhombic dodecahedron.
-// This is a simple version that will do for the project's ambition and even saves computation time.
+// This is a simple version (not exact distance when the closest point is one of the solid vertices)
+// It will do for the project's ambition and even saves computation time.
 float Sdf(Voxel voxel, vec3 position) {
     position = position - voxel.Position;
+    // Exploit the solid's symmetries
     position = vec3(abs(position.x), sign(position.z) * position.y, abs(position.z));
 
+    // distance to each face
     float a = dot(vec3(1.  ,   0.           , 0.          ), position) - voxelSize;
     float b = dot(vec3(0.5 ,   0.           , sqrt3 / 2.  ), position) - voxelSize;
     float c = dot(vec3(0.  , - sqrt2 / sqrt3, 1. / sqrt3  ), position) - voxelSize;
@@ -105,7 +108,7 @@ SceneSamplePayLoad GetClosestObject(vec3 marchingPosition, bool considerCursor) 
         result.closestVoxel = voxels[voxelIndex];
     }
     if (considerCursor){
-        float distToCursor = Sdf(cursorVoxel, marchingPosition) - 0.05;
+        float distToCursor = Sdf(cursorVoxel, marchingPosition) - 0.05; // this offset makes the cursor a bit bigger than other voxels
         if (distToCursor < result.distToScene){
             result.distToScene = distToCursor;
             result.closestVoxel = cursorVoxel;
@@ -125,13 +128,10 @@ struct RayPayLoad {
     float marchedDistance;
 };
 
-RayPayLoad RayMarch(vec3 marchingPosition, vec3 rayDirection, float marchedDistance, bool considerCursor, int nbReflections){
+RayPayLoad RayMarch(vec3 marchingPosition, vec3 rayDirection, float marchedDistance, bool considerCursor){
     RayPayLoad result;
     result.minDistToScene = farPlane;
     result.marchedDistance = marchedDistance;
-    if (nbReflections > 4){
-        return result;
-    }
     for (int i = 0; i < 100; i++) {
         SceneSamplePayLoad scenePayLoad = GetClosestObject(marchingPosition, considerCursor);
         marchingPosition = marchingPosition + rayDirection * scenePayLoad.distToScene;
@@ -158,25 +158,23 @@ RayPayLoad RayMarch(vec3 marchingPosition, vec3 rayDirection, float marchedDista
 vec3 SampleScene(vec3 marchingPosition, vec3 rayDirection){
     vec3 color;
     bool hitCursor = false;
-    RayPayLoad rayResult = RayMarch(marchingPosition, rayDirection, 0., true, 0);
+    RayPayLoad rayResult = RayMarch(marchingPosition, rayDirection, 0., true);
     if (rayResult.hitScene){
         Material matOfClosestVoxel = materials[rayResult.hitVoxel.MaterialIndex];
         color = AmbiantIlluminate(matOfClosestVoxel);
-        bool useShadows = false;
+        bool useShadows = true;
         bool isFirstLightShadowed = false;
         bool isSecondLightShadowed = false;
         if (useShadows){
-            RayPayLoad rayToLight = RayMarch(rayResult.hitPosition - 2 * epsilon * directionalLight,
+            RayPayLoad rayToLight = RayMarch(rayResult.hitPosition - 2 * epsilon * directionalLight,    // small offset to avoid shadow acne
                                             -directionalLight,
                                             rayResult.marchedDistance,
-                                            false,
-                                            0);
+                                            false);
             isFirstLightShadowed = rayToLight.hitScene;
-            rayToLight = RayMarch(rayResult.hitPosition - 2 * epsilon * secondaryDirectionalLight,
+            rayToLight = RayMarch(rayResult.hitPosition - 2 * epsilon * secondaryDirectionalLight,    // small offset to avoid shadow acne
                                   -secondaryDirectionalLight,
                                   rayResult.marchedDistance,
-                                  false,
-                                  0);
+                                  false);
             isSecondLightShadowed = rayToLight.hitScene;
         }
         if (!useShadows || !isFirstLightShadowed){
@@ -187,8 +185,9 @@ vec3 SampleScene(vec3 marchingPosition, vec3 rayDirection){
         }
 
         if (rayResult.hitCursor){
+            // Make the cursor transparent by continuing the ray marching
             hitCursor = true;
-            RayPayLoad continueResult = RayMarch(rayResult.hitPosition, rayDirection, rayResult.marchedDistance, false, 0);
+            RayPayLoad continueResult = RayMarch(rayResult.hitPosition, rayDirection, rayResult.marchedDistance, false);
             if (continueResult.hitScene){
                 Material matOfHitVoxel = materials[continueResult.hitVoxel.MaterialIndex];
                 color = mix(color,

@@ -4,7 +4,6 @@ public class Grid {
   private final PVector I = new PVector(1.  , 0.             , 0.             );
   private final PVector J = new PVector(-0.5, 0.             , sqrt(3.) / 2.  );
   private final PVector K = new PVector(0.  , sqrt(6.) / 3.  , - 1. / sqrt(3.));
-  private final PVector L = new PVector(-0.5, - sqrt(6.) / 3., - sqrt(3.) / 6.); //  = -(I + J + K); Useful for some algorithms
   public static final float VOXEL_SIZE = 0.5;
   
   private HashMap<String, Voxel> _voxels;
@@ -13,11 +12,11 @@ public class Grid {
   private int _currentMaterialIndex;
   
   public Grid(){
-    _currentMaterialIndex = 1;
     _voxels = new HashMap<String, Voxel>();
     AddSampleVoxels();
     CreateMaterials();
     _cursor = new Voxel(1,2,1);
+    _currentMaterialIndex = 1;
   }
   
   public void MoveCursor(int di, int dj, int dk){
@@ -33,19 +32,24 @@ public class Grid {
   }
   
   private void AddSampleVoxels(){
-    Add(0, 0, 0);
-    Add(1, 0, 0);
-    Add(0, 1, 0);
-    Add(0, 0, 1);
-    Add(-1, 0, 0);
-    Add(0, -1, 0);
-    Add(0, 0, -1);
-    Add(1, 1, 0);
-    Add(-1, -1, 0);
-    Add(0, -1, -1);
-    Add(1, 1, 1);
-    Add(-1, -1, -1);
-    Add(0, 1, 1);
+    AddWithMaterial(0, 0, 0, 2);
+    AddWithMaterial(1, 0, 0, 3);
+    AddWithMaterial(0, 1, 0, 4);
+    AddWithMaterial(0, 0, 1, 5);
+    AddWithMaterial(-1, 0, 0, 6);
+    AddWithMaterial(0, -1, 0, 7);
+    AddWithMaterial(0, 0, -1, 8);
+    AddWithMaterial(1, 1, 0, 9);
+    AddWithMaterial(-1, -1, 0, 8);
+    AddWithMaterial(0, -1, -1, 7);
+    AddWithMaterial(1, 1, 1, 6);
+    AddWithMaterial(-1, -1, -1, 5);
+    AddWithMaterial(0, 1, 1, 4);
+  }
+  
+  private void AddWithMaterial(int i, int j, int k, int index){
+    _currentMaterialIndex = index;
+    Add(i, j, k);
   }
   
   private void CreateMaterials(){

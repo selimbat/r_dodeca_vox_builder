@@ -1,5 +1,4 @@
 
-
 public class CameraController {
   public static final float FOCAL_LENGTH = 1.;
   private final float MAX_PITCH = 89.;
@@ -75,6 +74,10 @@ public class CameraController {
   
   public float GetYaw(){
     return _yaw;
+  }
+  
+  public float GetPitch(){
+    return _pitch;
   }
   
   private void ComputeRotationMatrix() {
